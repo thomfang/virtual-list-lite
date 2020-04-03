@@ -7,6 +7,7 @@ export class VirtualList {
     pos: number;
     size: number;
   }[] = [];
+
   private itemSizeGetter!: (itemElement: HTMLElement) => number;
   private itemPositionGetter!: (itemElement: HTMLElement) => number;
 
@@ -16,12 +17,20 @@ export class VirtualList {
     public readonly remainItemCountToTriggerReachTailEvent = 0
   ) {}
 
-  setSizeGetter(getter: (elem: HTMLElement) => number) {
+  setSizeGetter(getter: (element: HTMLElement) => number) {
     this.itemSizeGetter = getter;
   }
 
-  setPositionGetter(getter: (elem: HTMLElement) => number) {
+  setPositionGetter(getter: (element: HTMLElement) => number) {
     this.itemPositionGetter = getter;
+  }
+
+  updateItem(index: number, element: HTMLElement) {
+    this.itemDetails[index] = {
+      index,
+      pos: this.itemPositionGetter(element),
+      size: this.itemSizeGetter(element)
+    };
   }
 
   compute(
@@ -56,11 +65,7 @@ export class VirtualList {
       if (this.itemDetails[idx]) {
         return;
       }
-      this.itemDetails[idx] = {
-        index: idx,
-        pos: this.itemPositionGetter(elem),
-        size: this.itemSizeGetter(elem)
-      };
+      this.updateItem(idx, elem);
     });
 
     const bottom = scrollPosition + containerSize;
@@ -113,7 +118,7 @@ export class VirtualList {
     };
   }
 
-  computeFirstRender(containerSize: number, totalCount: number) {
+  private computeFirstRender(containerSize: number, totalCount: number) {
     const startIndex = 0;
     const visibleCount = Math.ceil(containerSize / this.itemSize);
     const endIndex = Math.min(this.bufferCount + visibleCount, totalCount);
