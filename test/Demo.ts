@@ -12,8 +12,6 @@ export interface UserInfo {
 }
 
 const virtualList = new VirtualList(100, 3, 1);
-virtualList.setPositionGetter(element => element.offsetTop);
-virtualList.setSizeGetter(element => element.offsetLeft);
 
 const data: UserInfo[] = [];
 const LIKES = [

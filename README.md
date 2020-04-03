@@ -10,7 +10,8 @@ For efficiently rendering large lists and tabular data
 let virtualList = new VirtualList(
   itemSize,
   bufferCount,
-  remainItemCountToTriggerReachTailEvent
+  remainItemCountToTriggerReachTailEvent,
+  isVerticalLayout
 );
 
 container.addEventListener('scroll', () => {

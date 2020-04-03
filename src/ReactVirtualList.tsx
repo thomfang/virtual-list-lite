@@ -1,21 +1,28 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { VirtualList } from './VirtualList';
 
+const paddingAttrNames = {
+  vertical: {
+    head: 'paddingTop',
+    tail: 'paddingBottom'
+  },
+  horzental: {
+    head: 'paddingLeft',
+    tail: 'paddingRight'
+  }
+};
+
 export type ReactVirtualListProps = {
   list: any[];
   itemSize: number;
   bufferCount: number;
   remainCount?: number;
-  paddingHead?: string;
-  paddingTail?: string;
   sizeGetter?: (element: HTMLElement) => number;
   positionGetter?: (element: HTMLElement) => number;
+  verticalLayout?: boolean;
   onReachTail?: () => void;
   renderItem: (item: any, index: number) => React.ReactElement;
 };
-
-const defaultSizeGetter = (element: HTMLElement) => element.offsetHeight;
-const defaultPositionGetter = (element: HTMLElement) => element.offsetTop;
 
 export const ReactVirtualList: React.FC<ReactVirtualListProps> = ({
   itemSize,
@@ -24,23 +31,20 @@ export const ReactVirtualList: React.FC<ReactVirtualListProps> = ({
   onReachTail,
   list,
   renderItem,
-  paddingHead = 'paddingTop',
-  paddingTail = 'paddingBottom',
-  sizeGetter = defaultSizeGetter,
-  positionGetter = defaultPositionGetter
+  verticalLayout = true
 }) => {
   const [startIndex, setStartIndex] = useState(0);
   const [endIndex, setEndIndex] = useState(0);
   const [padding, setPadding] = useState({ head: 0, tail: 0 });
   const [virtualList] = useState(
-    () => new VirtualList(itemSize, bufferCount, remainCount)
+    () => new VirtualList(itemSize, bufferCount, remainCount, verticalLayout)
   );
-
-  virtualList.setSizeGetter(sizeGetter);
-  virtualList.setPositionGetter(positionGetter);
 
   const containerRef = useRef<HTMLDivElement>();
   const scrollerRef = useRef<HTMLDivElement>();
+  const paddingAttr = verticalLayout
+    ? paddingAttrNames.vertical
+    : paddingAttrNames.horzental;
 
   const renderList = useMemo(() => list.slice(startIndex, endIndex), [
     list,
@@ -51,10 +55,20 @@ export const ReactVirtualList: React.FC<ReactVirtualListProps> = ({
   const scrollHandler = () => {
     const container = containerRef.current as HTMLDivElement;
     const scroller = scrollerRef.current as HTMLDivElement;
-    const { scrollTop, offsetHeight: containerSize } = container;
+    let scrollPosition!: number;
+    let containerSize!: number;
+
+    if (verticalLayout) {
+      scrollPosition = container.scrollTop;
+      containerSize = container.offsetHeight;
+    } else {
+      scrollPosition = container.scrollLeft;
+      containerSize = container.offsetWidth;
+    }
+
     const result = virtualList.compute(
       containerSize,
-      scrollTop,
+      scrollPosition,
       list.length,
       [].slice.call(scroller.children)
     );
@@ -87,8 +101,8 @@ export const ReactVirtualList: React.FC<ReactVirtualListProps> = ({
       <div
         ref={scrollerRef as any}
         style={{
-          [paddingHead]: padding.head + 'px',
-          [paddingTail]: padding.tail + 'px',
+          [paddingAttr.head]: padding.head + 'px',
+          [paddingAttr.tail]: padding.tail + 'px',
           position: 'absolute',
           left: 0,
           top: 0,

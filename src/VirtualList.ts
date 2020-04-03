@@ -1,5 +1,13 @@
-export class VirtualList {
+const sizeGetters = {
+  vertical: (element: HTMLElement) => element.offsetHeight,
+  horizental: (element: HTMLElement) => element.offsetWidth
+};
+const positionGetters = {
+  vertical: (element: HTMLElement) => element.offsetTop,
+  horizental: (element: HTMLElement) => element.offsetLeft
+};
 
+export class VirtualList {
   private startIndex!: number | null;
   private endIndex!: number | null;
   private itemDetails: {
@@ -14,15 +22,16 @@ export class VirtualList {
   constructor(
     public readonly itemSize: number,
     public readonly bufferCount: number,
-    public readonly remainItemCountToTriggerReachTailEvent = 0
-  ) {}
-
-  setSizeGetter(getter: (element: HTMLElement) => number) {
-    this.itemSizeGetter = getter;
-  }
-
-  setPositionGetter(getter: (element: HTMLElement) => number) {
-    this.itemPositionGetter = getter;
+    public readonly remainItemCountToTriggerReachTailEvent = 0,
+    public readonly verticalLayout = true
+  ) {
+    if (verticalLayout) {
+      this.itemSizeGetter = sizeGetters.vertical;
+      this.itemPositionGetter = positionGetters.vertical;
+    } else {
+      this.itemSizeGetter = sizeGetters.horizental;
+      this.itemPositionGetter = positionGetters.horizental;
+    }
   }
 
   updateItem(index: number, element: HTMLElement) {
