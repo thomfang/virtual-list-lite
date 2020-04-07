@@ -1,6 +1,6 @@
 # Virtual List
 
-For efficiently rendering large lists and tabular data
+For efficiently rendering large lists data
 
 ## Usage
 
