@@ -4,14 +4,14 @@ For efficiently rendering large lists data, simple and easy to use.
 
 ## Installation
 
-`npm i easy-virtual-list --save`
+`npm i virtual-list-lite --save`
 
 ## Usage
 
 ### VirtualList
 
 ```ts
-import { VirtualList, ScrollDirection } from 'easy-virtual-list'
+import { VirtualList, ScrollDirection } from 'virtual-list-lite'
 const virtualList = new VirtualList({
   itemExtent: 64,
   bufferCount: 3,
@@ -47,7 +47,7 @@ container.addEventListener('scroll', (e) => {
 ### VirtualList for React
 
 ```tsx
-import { ReactVirtualList } from 'easy-virtual-list'
+import { ReactVirtualList } from 'virtual-list-lite'
 const App = () => {
   const [userList, setUserList] = useState([])
   const [page, setPage] = useState(0)

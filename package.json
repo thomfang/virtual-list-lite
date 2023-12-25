@@ -1,5 +1,5 @@
 {
-  "name": "easy-virtual-list",
+  "name": "virtual-list-lite",
   "version": "2.0.0",
   "description": "A virtualize list implements",
   "main": "dist/index.js",
@@ -13,6 +13,14 @@
   },
   "keywords": [
     "VirtualList",
+    "React VirtualList",
+    "Easy VirtualList",
+    "virtual-list",
+    "react-virtual-list",
+    "easy-virtual-list",
+    "virtual-list-lite",
+    "list-view",
+    "ListView",
     "Typescript"
   ],
   "author": "thomfang (tilfon@live.com)",
