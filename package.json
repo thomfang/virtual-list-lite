@@ -1,5 +1,5 @@
 {
-  "name": "virtual-list",
+  "name": "easy-virtual-list",
   "version": "2.0.0",
   "description": "A virtualize list implements",
   "main": "dist/index.js",
