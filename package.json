@@ -1,6 +1,6 @@
 {
   "name": "virtual-list-lite",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A virtualize list implements",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thomfang/VirtualList.git"
+    "url": "git+https://github.com/thomfang/virtual-list-lite.git"
   },
   "keywords": [
     "VirtualList",
