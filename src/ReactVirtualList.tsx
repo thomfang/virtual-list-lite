@@ -1,117 +1,146 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { VirtualList } from './VirtualList';
+import React, { ReactNode, RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { VirtualList, ScrollDirection } from './VirtualList'
 
 const paddingAttrNames = {
-    vertical: {
-        head: 'paddingTop',
-        tail: 'paddingBottom',
-    },
-    horzental: {
-        head: 'paddingLeft',
-        tail: 'paddingRight',
-    },
-};
+  vertical: {
+    leading: 'paddingTop',
+    trailing: 'paddingBottom'
+  },
+  horizontal: {
+    leading: 'paddingLeft',
+    trailing: 'paddingRight'
+  }
+}
 
-export type ReactVirtualListProps = {
-    list: any[];
-    itemSize: number;
-    bufferCount: number;
-    remainCount?: number;
-    sizeGetter?: (element: HTMLElement) => number;
-    positionGetter?: (element: HTMLElement) => number;
-    verticalLayout?: boolean;
-    onReachTail?: () => void;
-    containerStyles?: React.CSSProperties;
-    renderItem: (item: any, index: number) => React.ReactElement;
-};
+export type ReactListViewProps = {
+  itemCount: number
+  itemExtent: number
+  bufferCount?: number
+  countToTheTrailing?: number
+  sizeGetter?: (element: HTMLElement) => number
+  positionGetter?: (element: HTMLElement) => number
+  direction?: ScrollDirection
+  onReachTheEnd?: () => void
+  containerStyles?: React.CSSProperties
+  itemBuilder: (index: number) => ReactNode
+  scrollerRef?: RefObject<HTMLDivElement>
+}
 
-export const ReactVirtualList: React.FC<ReactVirtualListProps> = ({
-    itemSize,
+export function ReactListView({
+  itemCount,
+  itemExtent,
+  bufferCount = 3,
+  countToTheTrailing = 0,
+  onReachTheEnd,
+  itemBuilder,
+  direction = ScrollDirection.vertical,
+  containerStyles = {},
+  scrollerRef: customScrollerRef,
+}: ReactListViewProps) {
+  const isVerticalScroll = direction === ScrollDirection.vertical
+
+  const [startIndex, setStartIndex] = useState(0)
+  const [endIndex, setEndIndex] = useState(0)
+  const [padding, setPadding] = useState({ leading: 0, trailing: 0 })
+  const [virtualList] = useState(() => new VirtualList({
+    itemExtent,
     bufferCount,
-    remainCount = 0,
-    onReachTail,
-    list,
-    renderItem,
-    verticalLayout = true,
-    containerStyles = {},
-}) => {
-    const [startIndex, setStartIndex] = useState(0);
-    const [endIndex, setEndIndex] = useState(0);
-    const [padding, setPadding] = useState({ head: 0, tail: 0 });
-    const [virtualList] = useState(() => new VirtualList(itemSize, bufferCount, remainCount, verticalLayout));
+    countToTheTrailing,
+    direction,
+  }))
 
-    const containerRef = useRef<HTMLDivElement>();
-    const scrollerRef = useRef<HTMLDivElement>();
-    const paddingAttr = verticalLayout ? paddingAttrNames.vertical : paddingAttrNames.horzental;
+  const containerRef = useRef<HTMLDivElement>(null)
+  const listWrapperRef = useRef<HTMLDivElement>(null)
+  const paddingAttr = isVerticalScroll
+    ? paddingAttrNames.vertical
+    : paddingAttrNames.horizontal
 
-    const renderList = useMemo(() => {
-        return list.slice(startIndex, endIndex);
-    }, [
-        list,
-        startIndex,
-        endIndex,
-    ]);
+  const scrollerRef = customScrollerRef ?? containerRef
 
-    const scrollHandler = () => {
-        const container = containerRef.current as HTMLDivElement;
-        const scroller = scrollerRef.current as HTMLDivElement;
-        let scrollPosition!: number;
-        let containerSize!: number;
+  const update = useCallback(() => {
+    if (scrollerRef.current == null || listWrapperRef.current == null) {
+      return
+    }
 
-        if (verticalLayout) {
-            scrollPosition = container.scrollTop;
-            containerSize = container.offsetHeight;
-        } else {
-            scrollPosition = container.scrollLeft;
-            containerSize = container.offsetWidth;
-        }
+    const container = scrollerRef.current as HTMLDivElement
+    const list = listWrapperRef.current as HTMLDivElement
+    let scrollPosition!: number
+    let containerSize!: number
 
-        const result = virtualList.compute(
-            containerSize,
-            scrollPosition,
-            list.length,
-            [].slice.call(scroller.children)
-        );
+    if (isVerticalScroll) {
+      scrollPosition = container.scrollTop
+      containerSize = container.offsetHeight
+    } else {
+      scrollPosition = container.scrollLeft
+      containerSize = container.offsetWidth
+    }
 
-        setPadding({
-            head: result.paddingHead,
-            tail: result.paddingTail,
-        });
+    const result = virtualList.compute(
+      containerSize,
+      scrollPosition,
+      itemCount,
+      [].slice.call(list.children)
+    )
 
-        if (result.shouldUpdate) {
-            setStartIndex(result.startIndex);
-            setEndIndex(result.endIndex);
-        }
+    setPadding({
+      leading: result.paddingLeading,
+      trailing: result.paddingTrailing
+    })
 
-        if (result.reachTail) {
-            onReachTail && onReachTail();
-        }
-    };
+    if (result.shouldUpdate) {
+      setStartIndex(result.startIndex)
+      setEndIndex(result.endIndex)
+    }
 
-    return (
-        <div
-            ref={containerRef as any}
-            onScroll={scrollHandler}
-            style={{
-                width: '100%',
-                height: '100%',
-                position: 'relative',
-                ...containerStyles,
-            }}
-        >
-            <div
-                ref={scrollerRef as any}
-                style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    width: '100%',
-                    [paddingAttr.head]: padding.head + 'px',
-                    [paddingAttr.tail]: padding.tail + 'px',
-                }}
-            >
-                {renderList.map((item, index) => renderItem(item, index))}
-            </div>
-        </div>
-    );
-};
+    if (result.shouldScrollToLeading) {
+      if (isVerticalScroll) {
+        container.scrollTop = 0
+      } else {
+        container.scrollLeft = 0
+      }
+    }
+
+    if (result.isReachTheEnd) {
+      onReachTheEnd?.()
+    }
+  }, [isVerticalScroll, itemCount, onReachTheEnd, virtualList, scrollerRef])
+
+  useLayoutEffect(() => {
+    update()
+  }, [itemCount, update])
+
+  const items: ReactNode[] = []
+  const end = Math.min(itemCount - 1, endIndex)
+
+  for (let i = startIndex; i <= end; i++) {
+    items.push(
+      <React.Fragment key={i}>
+        {itemBuilder(i)}
+      </React.Fragment>
+    )
+  }
+
+  return (
+    <div
+      ref={scrollerRef}
+      onScroll={update}
+      style={{
+        width: '100%',
+        position: 'relative',
+        overflow: 'auto',
+        ...containerStyles
+      }}>
+      <div
+        ref={listWrapperRef}
+        style={{
+          left: 0,
+          top: 0,
+          width: '100%',
+          [paddingAttr.leading]: padding.leading + 'px',
+          [paddingAttr.trailing]: padding.trailing + 'px'
+        }}>
+        {items}
+      </div>
+    </div>
+  )
+}

@@ -2,80 +2,87 @@
 
 For efficiently rendering large lists data
 
+## Installation
+
+`npm i virtual-list --save`
+
 ## Usage
 
 ### VirtualList
 
 ```ts
-let virtualList = new VirtualList(
-  itemSize,
-  bufferCount,
-  remainItemCountToTriggerReachTailEvent,
-  isVerticalLayout
-);
+import { VirtualList, ScrollDirection } from 'virtual-list'
+const virtualList = new VirtualList({
+  itemExtent: 64,
+  bufferCount: 3,
+  countToTheTrailing: 3,
+  direction: ScrollDirection.vertical,
+})
 
-container.addEventListener('scroll', () => {
-  let {
+container.addEventListener('scroll', (e) => {
+  const {
     shouldUpdate,
-    reachTail,
+    isReachTheEnd,
     startIndex,
     endIndex,
-    paddingHead,
-    paddingTail
+    paddingLeading,
+    paddingTrailing,
+    shouldScrollToLeading
   } = virtualList.compute(
-    containerSize,
-    scrollPosition,
+    container.offsetHeight,
+    e.scrollTop,
     data.length,
-    renderedItemElements
+    Array.from(container.children),
   );
 });
 ```
 
-### ReactVirtualList
+| Property Name | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| itemExtent | number | true | - | The size of each item, in order to calculate the size of the virtual list |
+| bufferCount | number | true | - | Number of items of pre-rendered at the leading and trailing |
+| countToTheTrailing | number | false | 0 | Set the number of items left at the tail to trigger scrolling onReachTheEnd event |
+| direction | ScrollDirection | false | ScrollDirection.vertical | List view scroll direction |
 
-```ts
+### VirtualList for React
+
+```tsx
+import { ReactVirtualList } from 'virtual-list'
 const App = () => {
-  const [userList, setUserList] = useState<UserInfo[]>([]);
-  const [page, setPage] = useState<number>(0);
+  const [userList, setUserList] = useState([])
+  const [page, setPage] = useState(0)
   const loadNextPage = () => {
-    setPage(page + 1);
-  };
+    setPage(page + 1)
+  }
 
   useEffect(() => {
-    const newItems = fetchUserList(page, 25);
-    setUserList([...userList, ...newItems]);
-  }, [page]);
+    fetchUserList(page).then(newItems => {
+      setUserList([...userList, ...newItems])
+    })
+  }, [page])
 
   return (
     <ReactVirtualList
-      list={userList}
-      itemSize={100}
+      itemCount={userList.length}
+      itemExtent={100}
       bufferCount={3}
-      onReachTail={loadNextPage}
-      renderItem={(itemData: UserInfo, index: number) => (
-        <div className="item">
-          <div className="item-header">
-            <div className="item-left"></div>
-            <div className="item-right">
-              <div className="item-text-bold">{itemData.name}</div>
-              <div className="item-text">
-                {itemData.gender} | {itemData.age}
-              </div>
-            </div>
-            {itemData.likes.length && (
-              <div className="item-footer">
-                <div>Likes:</div>
-                <ol>
-                  {itemData.likes.map(like => (
-                    <li>{like}</li>
-                  ))}
-                </ol>
-              </div>
-            )}
-          </div>
-        </div>
+      onReachTheEnd={loadNextPage}
+      itemBuilder={(index) => (
+        <Item data={userList[index]} />
       )}
     />
-  );
+  )
 }
 ```
+
+| Property Name | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| itemCount | number | true | - | List view item count |
+| itemExtent | number | true | - | The size of each item, in order to calculate the size of the virtual list |
+| bufferCount | number | true | - | Number of items of pre-rendered at the leading and trailing |
+| countToTheTrailing | number | false | 0 | Set the number of items left at the tail to trigger scrolling onReachTheEnd event |
+| onReachTheEnd | () => void | false | - | The event of list view scroll to the end |
+| itemBuilder | (index: number) => React.JSXElement | true | - | List view item builder function |
+| direction | ScrollDirection | false | ScrollDirection.vertical | List view scroll direction |
+| containerStyles | React.CSSProperties | false | - | Custom list view container style |
+| scrollerRef | React.RefObject<HTMLDivElement> | false | - | If the list view is scrolling by element outside, you should set this property |
